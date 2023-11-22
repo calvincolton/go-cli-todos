@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	todo "github.com/calvincolton/go-cli-todos"
 )
@@ -45,16 +44,18 @@ func main() {
 	switch {
 	case *add:
 		// Get the task from standard input
-		t, err := getTask(os.Stdin, flag.Args()...)
+		tasks, err := getTasks(os.Stdin, flag.Args()...)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 
-		// Add the task
-		l.Add(t)
+		for _, t := range tasks {
+			// Add each task individually
+			l.Add(t)
+		}
 
-		// Save the To-Do list
+		// Save the To-Do list after adding all tasks
 		if err := l.Save(todoFileName); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -110,19 +111,27 @@ func main() {
 	}
 }
 
-func getTask(r io.Reader, args ...string) (string, error) {
+func getTasks(r io.Reader, args ...string) ([]string, error) {
 	if len(args) > 0 {
-		return strings.Join(args, " "), nil
+		return args, nil
 	}
 
+	var tasks []string
 	s := bufio.NewScanner(r)
-	s.Scan()
-	if err := s.Err(); err != nil {
-		return "", err
+	for s.Scan() {
+		line := s.Text()
+		if len(line) == 0 {
+			break
+		}
+		tasks = append(tasks, line)
 	}
-	if len(s.Text()) == 0 {
-		return "", fmt.Errorf("task cannot be blank")
+	if err := s.Err(); err != nil {
+		return nil, err
 	}
 
-	return s.Text(), nil
+	if len(tasks) == 0 {
+		return nil, fmt.Errorf("tasks cannot be blank")
+	}
+
+	return tasks, nil
 }

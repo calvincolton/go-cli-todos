@@ -22,11 +22,15 @@ func main() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Copyright 2023\n")
 		fmt.Fprintln(flag.CommandLine.Output(), "Usage information:")
 		flag.PrintDefaults()
+		fmt.Fprintf(flag.CommandLine.Output(), "New tasks can be added via STDIN, e.g.\n$echo \"Add a task item via standard input\" | %s -add", os.Args[0])
+		fmt.Println("")
+		fmt.Fprintf(flag.CommandLine.Output(), "Or passed as arguments, e.g.\n%s -add Add a second task via flags", os.Args[0])
 	}
 	add := flag.Bool("add", false, "Add a task to the To-Do list")
 	list := flag.Bool("list", false, "List all tasks")
 	complete := flag.Int("complete", 0, "Mark a task as completed by passing its number")
 	delete := flag.Int("delete", 0, "Delete a task by passing its number")
+	listComplete := flag.Bool("list-complete", false, "List tasks that have been marked as completed")
 	listIncomplete := flag.Bool("list-incomplete", false, "List tasks that have not been marked as completed")
 
 	flag.Parse()
@@ -58,15 +62,23 @@ func main() {
 	case *list:
 		// List current To-Do items
 		fmt.Print(l)
-	case *listIncomplete:
-		// List current To-Do items that have not been completed
-		filteredList := todo.List{}
+	case *listComplete:
+		completedList := todo.List{}
 		for _, t := range *l {
-			if !t.Done {
-				filteredList = append(filteredList, t)
+			if t.Done {
+				completedList = append(completedList, t)
 			}
 		}
-		fmt.Print(&filteredList)
+		fmt.Print(&completedList)
+	case *listIncomplete:
+		// List current To-Do items that have not been completed
+		incompleteList := todo.List{}
+		for _, t := range *l {
+			if !t.Done {
+				incompleteList = append(incompleteList, t)
+			}
+		}
+		fmt.Print(&incompleteList)
 	case *complete > 0:
 		// Complete the To-Do item
 		if err := l.Complete(*complete); err != nil {
